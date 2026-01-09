@@ -1,0 +1,35 @@
+name: CXBX-Reloaded Debug CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-debug:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure CMake for Debug
+        run: |
+          cmake -B build -A x64 -DBUILD_CXBXR_DEBUGGER=ON -DCMAKE_SYSTEM_VERSION=7 `
+                -DCMAKE_CXX_FLAGS_DEBUG="/D_DEBUG /Zi /Od /RTC1" `
+                -DCMAKE_C_FLAGS_DEBUG="/D_DEBUG /Zi /Od /RTC1"
+
+      - name: Build Debug
+        run: cmake --build build --config Debug --target INSTALL -j $env:NUMBER_OF_PROCESSORS
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts/Debug
+          cp -r build/Debug/bin/* artifacts/Debug/
+
+      - name: Zip Debug artifacts
+        run: powershell -Command "Compress-Archive -Path artifacts/Debug/* -DestinationPath artifacts/CxbxReloaded-Debug.zip -Force"
+
+      - name: Upload Debug ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: CxbxReloaded-Debug
+          path: artifacts/CxbxReloaded-Debug.zip
